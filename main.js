@@ -472,7 +472,7 @@ function cycleLoadingStatus() {
 
 function normalizeResult(raw, latencyMs = 280) {
   const score = typeof raw.score === 'number' ? Math.max(0, Math.min(100, Math.round(raw.score))) : 50;
-  const verdict = raw.verdict || getScoreVerdict(score);
+  const verdict = getScoreVerdict(score);
   const summary = raw.summary || 'Threat analysis complete. Review detected threat indicators and advisory tips below.';
   const mode = raw.mode || (state.engineMode === 'ai' ? 'ai' : 'demo');
 
