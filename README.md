@@ -45,6 +45,15 @@ The frontend proxies `/api` to port 3001. `npm run build` produces a static `dis
 
 The UI always shows which engine produced the result (`Demo Analysis` / `AI Neural Analysis`).
 
+## Tests
+
+```bash
+cd server
+npm test
+```
+
+Five API tests: mode detection, critical classification, deterministic scoring, safe-domain case, and input validation.
+
 ## How scoring works
 
 Each signal contributes a fixed weight; the score is the maximum matched signal, not a sum, so one critical indicator is enough to raise the verdict. Identical input always produces an identical score — retry-safe for demos and judging.
