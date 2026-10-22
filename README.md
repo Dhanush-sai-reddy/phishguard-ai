@@ -6,6 +6,8 @@ Paste a suspicious URL or message and get a threat score, the exact red flags fo
 
 Built for **NextSpark Hacks 2026** and **SafeSpace Hacks 2026**.
 
+**Live demo:** https://dhanush-sai-reddy.github.io/phishguard-ai/
+
 ![PhishGuard AI result screen](docs/screenshot.png)
 
 ## What it does

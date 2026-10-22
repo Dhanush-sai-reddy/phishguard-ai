@@ -25,6 +25,9 @@ const DEMO_PRESETS = {
 };
 
 // Fallback simulations for graceful offline / standalone testing
+// Empty string = same-origin backend (dev proxy). null = static-only demo.
+const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '' : null);
+
 const SIMULATED_RESPONSES = {
   'https://paypa1-secure.com/verify-account?id=8372': {
     score: 92,
@@ -177,8 +180,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================================================
 
 async function initializeHealthCheck() {
+  if (API_BASE === null) {
+    setModeBadge('demo');
+    return;
+  }
+
   try {
-    const response = await fetch('/api/health');
+    const response = await fetch(`${API_BASE}/api/health`);
     if (response.ok) {
       const data = await response.json();
       const isAi = data.mode === 'ai' || data.ai === true || data.status === 'ai';
@@ -358,33 +366,36 @@ async function handleScan() {
   const startTime = performance.now();
   let result = null;
 
-  try {
-    // Attempt backend analysis
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        type: state.currentTab,
-        content: processedContent
-      })
-    });
-
-    if (response.ok) {
-      result = await response.json();
-    } else {
-      if (response.status === 429) {
-        throw new Error('Analysis rate limit exceeded. Please wait a moment.');
-      }
-      throw new Error(`Analysis server responded with status: ${response.status}`);
-    }
-  } catch (err) {
-    console.warn('Backend /api/analyze failed or unreachable:', err);
-    // If backend isn't up, generate realistic fallback result so demo never breaks
+  if (API_BASE === null) {
+    // Static deployment: run the local engine with no network round-trip.
     result = generateFallbackResult(state.currentTab, processedContent);
-    if (import.meta.env.DEV) {
-      showToast('Backend offline (port 3001) — using local heuristic engine.', 'info');
+  } else {
+    try {
+      const response = await fetch(`${API_BASE}/api/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: state.currentTab,
+          content: processedContent
+        })
+      });
+
+      if (response.ok) {
+        result = await response.json();
+      } else {
+        if (response.status === 429) {
+          throw new Error('Analysis rate limit exceeded. Please wait a moment.');
+        }
+        throw new Error(`Analysis server responded with status: ${response.status}`);
+      }
+    } catch (err) {
+      console.warn('Backend /api/analyze failed or unreachable:', err);
+      result = generateFallbackResult(state.currentTab, processedContent);
+      if (import.meta.env.DEV) {
+        showToast('Backend offline (port 3001) — using local heuristic engine.', 'info');
+      }
     }
   }
 
