@@ -159,7 +159,7 @@
       </section>
 
       <!-- Results Section (hidden until scan completes) -->
-      <section class="results-container" id="resultsSection" style="display: none;">
+      <section class="results-container" id="resultsSection" aria-live="polite" style="display: none;">
         <!-- Results Header -->
         <div class="results-header-bar glass-card">
           <div class="target-summary">
@@ -358,9 +358,41 @@
         </div>
         <p class="footer-disclaimer">
           PhishGuard AI does not store your data. All analysis is done in real-time.
+          <button type="button" class="info-link" id="openInfo">How it works &amp; limits</button>
         </p>
       </div>
     </footer>
+  </div>
+
+  <!-- Method & limits -->
+  <div class="modal-backdrop" id="infoModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <button type="button" class="modal-close" id="closeInfo" aria-label="Close">&times;</button>
+      <h2 id="infoTitle">How PhishGuard works — and what it can't do</h2>
+
+      <h3>Scoring</h3>
+      <p>Each signal has a fixed weight. The strongest matched signal sets the score, so one critical indicator is enough to raise the verdict. The same input always produces the same score, which is why you can retry a scan and get the same answer.</p>
+      <ul>
+        <li><strong>0–20 Safe</strong> · 21–40 Low Risk · 41–60 Suspicious · 61–80 Dangerous · <strong>81–100 Critical Threat</strong></li>
+      </ul>
+
+      <h3>Demo vs AI</h3>
+      <p>Without an API key the app runs a transparent, deterministic rules engine locally. With a key configured, the same request is sent to an LLM with a strict JSON schema and falls back to the rules engine on any error. The badge in the header always says which engine produced the result.</p>
+
+      <h3>Limits</h3>
+      <ul>
+        <li>It does <strong>not</strong> open the link, resolve DNS, or query reputation feeds — so it cannot detect a compromised legitimate domain.</li>
+        <li>It analyses the text you paste, not the page behind it.</li>
+        <li>"Detection confidence" means how many weighted signals matched, not a statistical probability.</li>
+        <li>No detector is perfect. Treat a low score as "no known pattern found", not a guarantee.</li>
+      </ul>
+
+      <h3>Privacy</h3>
+      <p>Scans are processed in memory. Nothing is written to a server or database. History lives in this browser's localStorage and the Clear History button removes it.</p>
+
+      <h3>Credits</h3>
+      <p>Built with Vite, vanilla JavaScript, Express, and an optional OpenAI layer. Icons are emoji; the typeface is Inter.</p>
+    </div>
   </div>
 
   <!-- Main JavaScript Bundle -->

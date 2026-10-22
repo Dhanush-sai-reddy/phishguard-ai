@@ -10,6 +10,8 @@ Built for **NextSpark Hacks 2026** and **SafeSpace Hacks 2026**.
 
 ![PhishGuard AI result screen](docs/screenshot.png)
 
+[Watch the 57-second captioned demo](docs/demo.mp4)
+
 ## What it does
 
 - **URL scan** — typosquatting, raw-IP hosts, high-abuse TLDs, excessive subdomains, credential-harvesting paths
@@ -81,7 +83,8 @@ Each signal contributes a fixed weight; the score is the maximum matched signal,
 index.html        markup and static sections
 main.js           UI state, API calls, offline fallback, gauge, history
 style.css         dark theme, responsive layout
-server/index.js   /api/health, /api/analyze, heuristics, optional GPT
+analyzer.js       shared deterministic engine (identical on client and server)
+server/index.js   /api/health, /api/analyze, optional GPT layer
 vite.config.js    dev proxy
 ```
 

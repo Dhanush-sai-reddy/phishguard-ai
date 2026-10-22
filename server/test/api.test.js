@@ -97,3 +97,29 @@ test('rejects malformed requests', async () => {
   });
   assert.equal(emptyContent.status, 400);
 });
+
+test('scam message with urgency and a link outranks a neutral one', async () => {
+  const bad = await fetch(`${BASE}/api/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'message',
+      content:
+        'URGENT: Your bank account will be suspended in 2 hours. Verify your identity at http://secure-bank-verify.tk and send the one-time code to our support agent.',
+    }),
+  }).then((r) => r.json());
+
+  const good = await fetch(`${BASE}/api/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'message',
+      content: 'Hey, are we still getting coffee tomorrow at 3pm?',
+    }),
+  }).then((r) => r.json());
+
+  assert.ok(bad.score >= 61, `expected >=61, got ${bad.score}`);
+  assert.ok(['Dangerous', 'Critical Threat'].includes(bad.verdict));
+  assert.ok(bad.flags.some((f) => f.name === 'Embedded Link'));
+  assert.ok(good.score <= 20, `expected <=20, got ${good.score}`);
+});

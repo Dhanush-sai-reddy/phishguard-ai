@@ -33,7 +33,7 @@ PhishGuard AI is a two-field safety check. The user pastes a URL or a message; t
 
 1. The frontend normalizes input and posts `{ type, content }` to `/api/analyze`.
 2. The backend runs deterministic signal checks, takes the strongest matched signal as the score, and maps it to a verdict band.
-3. If an API key is configured, the same input goes to an LLM with a strict JSON schema; any failure falls back to the heuristic result.
+3. The heuristic engine is a single shared module (`analyzer.js`) used by both the server and the static build, so the same input gets the same score everywhere. If an API key is configured, the input goes to an LLM with a strict JSON schema; any failure falls back to that same module.
 4. The UI renders the score, flags, summary, and tips, and stores the result locally.
 
 Deterministic scoring matters: the same input always gets the same score, so a judge can retry a demo and see the same verdict.
@@ -59,6 +59,10 @@ Explainability is the product. A score alone changes nothing; a sentence like "t
 - A shareable "safety card" a user can send to the person who forwarded the link
 - Browser-extension wrapper that reuses the same `/api/analyze` contract
 
+## Demo video (57 seconds, captioned)
+
+A recorded walkthrough is in `docs/demo.mp4` and linked above. Longer script, if a live narration is preferred:
+
 ## Demo video script (2 minutes)
 
 | Time | Shot | Line |
@@ -73,6 +77,7 @@ Explainability is the product. A score alone changes nothing; a sentence like "t
 
 ## Links
 
-- Repo: `<add public GitHub URL>`
-- Live demo: `<add deployed URL>`
-- Video: `<add YouTube/Loom URL>`
+- Repo: https://github.com/Dhanush-sai-reddy/phishguard-ai
+- Live demo: https://dhanush-sai-reddy.github.io/phishguard-ai/
+- Video (57s captioned walkthrough): https://dhanush-sai-reddy.github.io/phishguard-ai/demo.mp4
+- Screenshot: https://dhanush-sai-reddy.github.io/phishguard-ai/screenshot.png

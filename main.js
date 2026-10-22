@@ -7,6 +7,8 @@
 // Constants & Demo Presets
 // ==========================================================================
 
+import { analyzeUrlDemo, analyzeMessageDemo } from './analyzer.js';
+
 const LOCAL_STORAGE_KEY = 'phishguard_history_v1';
 const MAX_HISTORY_ITEMS = 20;
 const GAUGE_CIRCUMFERENCE = 502.6548; // 2 * PI * 80
@@ -28,81 +30,7 @@ const DEMO_PRESETS = {
 // Empty string = same-origin backend (dev proxy). null = static-only demo.
 const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? '' : null);
 
-const SIMULATED_RESPONSES = {
-  'https://paypa1-secure.com/verify-account?id=8372': {
-    score: 92,
-    verdict: 'Dangerous Phishing Link',
-    mode: 'demo',
-    summary: 'High-confidence typosquatting attack targeting PayPal credentials. The domain uses visual substitution (digit 1 instead of letter l) and mimics account verification workflows to intercept sensitive credentials.',
-    flags: [
-      {
-        icon: '🚨',
-        name: 'Typosquatting Domain',
-        severity: 'critical',
-        explanation: "Domain 'paypa1-secure.com' replaces the letter 'l' with the digit '1' to deceive users into believing it is an authentic PayPal service."
-      },
-      {
-        icon: '⚠️',
-        name: 'Credential Harvesting Pattern',
-        severity: 'high',
-        explanation: "URI path '/verify-account' matches known credential phishing campaigns designed to steal login credentials and 2FA tokens."
-      },
-      {
-        icon: '🌐',
-        name: 'Recently Registered Domain',
-        severity: 'high',
-        explanation: 'Domain registered within the last 7 days with hidden WHOIS privacy protection.'
-      }
-    ],
-    tips: [
-      'Do not enter login credentials, passwords, or personal details on this site.',
-      'Always check the address bar carefully for typos (e.g. 1 vs l, 0 vs O).',
-      'Navigate directly to paypal.com by typing the official address in a fresh tab.'
-    ]
-  },
-  'https://www.google.com': {
-    score: 4,
-    verdict: 'Safe & Verified',
-    mode: 'demo',
-    summary: 'Legitimate domain belonging to Google LLC. High reputation score, valid EV TLS certificate, and clean threat intelligence record across global telemetry.',
-    flags: [],
-    tips: [
-      'The destination domain is authenticated and verified.',
-      'Always ensure HTTPS padlock is active when submitting private information.'
-    ]
-  },
-  'http://192.168.1.1/login.php?redirect=bank': {
-    score: 78,
-    verdict: 'Suspicious IP Destination',
-    mode: 'demo',
-    summary: 'Suspicious redirection using private subnet IPv4 address with banking referral parameters over unencrypted HTTP. May indicate DNS spoofing or local router interception.',
-    flags: [
-      {
-        icon: '🌐',
-        name: 'Direct IP Address in URL',
-        severity: 'high',
-        explanation: 'Host is a raw IP address (192.168.1.1) rather than a reputable domain name, commonly used in intranet evasion and MITM attacks.'
-      },
-      {
-        icon: '🔓',
-        name: 'Insecure Protocol (HTTP)',
-        severity: 'high',
-        explanation: 'Communication is unencrypted. Login credentials transmitted in cleartext.'
-      },
-      {
-        icon: '🎣',
-        name: 'Deceptive Redirect Parameter',
-        severity: 'medium',
-        explanation: "URL includes '?redirect=bank' attempting to mimic financial institution login redirects."
-      }
-    ],
-    tips: [
-      'Legitimate financial institutions never conduct authentication via raw private IP addresses.',
-      'Never input banking passwords over non-HTTPS connections.',
-      'Check router settings for potential DNS hijack attempts.'
-    ]
-  }
-};
+
 
 // ==========================================================================
 // Application State
@@ -167,11 +95,45 @@ const elements = {
 // Application Initialization
 // ==========================================================================
 
+
+// ==========================================================================
+// Method & limits modal
+// ==========================================================================
+
+function initializeInfoModal() {
+  const modal = document.getElementById('infoModal');
+  const openBtn = document.getElementById('openInfo');
+  const closeBtn = document.getElementById('closeInfo');
+  if (!modal || !openBtn || !closeBtn) return;
+
+  const open = () => {
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    closeBtn.focus();
+  };
+
+  const close = () => {
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    openBtn.focus();
+  };
+
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) close();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.hidden) close();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
   initializeHealthCheck();
   initializeHistory();
   initializeEventListeners();
+  initializeInfoModal();
   updateTabIndicator();
 });
 
@@ -552,206 +514,8 @@ function getDefaultTipsForScore(score) {
 // ==========================================================================
 
 function generateFallbackResult(type, content) {
-  // Check exact simulation table first
-  if (SIMULATED_RESPONSES[content]) {
-    return SIMULATED_RESPONSES[content];
-  }
-
-  const lower = content.toLowerCase();
-
-  // Pattern detection for URLs
-  if (type === 'url') {
-    if (lower.includes('paypa1') || lower.includes('secure-login') || lower.includes('verify-account')) {
-      return {
-        score: 94,
-        verdict: 'Dangerous Phishing Link',
-        mode: 'demo',
-        summary: 'Deceptive credential harvesting link detected. Domain employs homograph typosquatting to impersonate financial authentication services.',
-        flags: [
-          {
-            icon: '🚨',
-            name: 'Homograph Typosquatting',
-            severity: 'critical',
-            explanation: 'Domain uses deceptive alphanumeric substitution to impersonate a legitimate service.'
-          },
-          {
-            icon: '🎣',
-            name: 'High-Risk Verification Parameter',
-            severity: 'high',
-            explanation: "Target path mimics urgency credential verification ('verify-account')."
-          }
-        ],
-        tips: [
-          'Close the browser tab immediately.',
-          'Never submit credentials to unverified domains.'
-        ]
-      };
-    }
-
-    if (lower.includes('192.168.') || lower.includes('10.') || lower.includes('172.16.')) {
-      return {
-        score: 76,
-        verdict: 'Suspicious Network Target',
-        mode: 'demo',
-        summary: 'Target resolves directly to private IP addressing without validated encryption certificates, typical of local gateway phishing or CSRF attacks.',
-        flags: [
-          {
-            icon: '🌐',
-            name: 'Private Subnet Direct IP',
-            severity: 'high',
-            explanation: 'Raw IP address used instead of canonical domain name.'
-          },
-          {
-            icon: '🔓',
-            name: 'Unencrypted Transmission',
-            severity: 'high',
-            explanation: 'Plaintext protocol without TLS encryption verification.'
-          }
-        ],
-        tips: [
-          'Verify your router DNS settings.',
-          'Ensure all logins take place over authenticated HTTPS.'
-        ]
-      };
-    }
-
-    if (lower.includes('google.com') || lower.includes('github.com') || lower.includes('apple.com')) {
-      return {
-        score: 3,
-        verdict: 'Safe & Verified',
-        mode: 'demo',
-        summary: 'Well-established enterprise domain with positive reputation, verified TLS certificates, and no active threat listings.',
-        flags: [],
-        tips: [
-          'Domain is authenticated and verified as legitimate.',
-          'Always verify HTTPS padlock in the address bar.'
-        ]
-      };
-    }
-
-    // Generic URL
-    return {
-      score: 48,
-      verdict: 'Unverified Domain',
-      mode: 'demo',
-      summary: 'Domain possesses moderate risk indicators with neutral historical reputation. Exercise standard security diligence before entering credentials.',
-      flags: [
-        {
-          icon: '⚡',
-          name: 'Neutral Domain Reputation',
-          severity: 'medium',
-          explanation: 'Domain lacks high-volume historical trust markers.'
-        }
-      ],
-      tips: [
-        'Confirm the legitimacy of the destination before providing credentials.',
-        'Check for HTTPS encryption.'
-      ]
-    };
-  }
-
-  // Pattern detection for Messages
-  if (lower.includes('prince') || lower.includes('transfer out') || lower.includes('$45,000,000') || lower.includes('processing fee')) {
-    return {
-      score: 98,
-      verdict: 'Advance-Fee Scam (419)',
-      mode: 'demo',
-      summary: 'Classic Nigerian Prince / Advance-Fee fraud pattern. High urgency, unrealistic financial promise, and demand for upfront processing fees to steal banking information.',
-      flags: [
-        {
-          icon: '🚨',
-          name: 'Advance-Fee Fraud Pattern',
-          severity: 'critical',
-          explanation: 'Promises exorbitant wealth in exchange for advance processing payments.'
-        },
-        {
-          icon: '⚠️',
-          name: 'Direct Banking Extraction',
-          severity: 'critical',
-          explanation: 'Explicitly requests full bank account numbers, routing numbers, and identity.'
-        },
-        {
-          icon: '⏰',
-          name: 'Artificial Urgency Pressure',
-          severity: 'high',
-          explanation: "Claims 'Time is running out!' to prevent critical victim reflection."
-        }
-      ],
-      tips: [
-        'Never send advance fees or money to unsolicited contacts.',
-        'Never disclose bank account or routing numbers.',
-        'Block and report this message immediately.'
-      ]
-    };
-  }
-
-  if (lower.includes('irs') || lower.includes('social security') || lower.includes('face arrest') || lower.includes('legal action')) {
-    return {
-      score: 96,
-      verdict: 'Government Impersonation Scam',
-      mode: 'demo',
-      summary: 'Coercive government impersonation threat. Uses intimidation tactics including imminent arrest, compromised SSN claims, and urgent 24-hour ultimatums to extort identity and banking data.',
-      flags: [
-        {
-          icon: '🚨',
-          name: 'Government Agency Impersonation',
-          severity: 'critical',
-          explanation: 'Impersonates the Internal Revenue Service (IRS).'
-        },
-        {
-          icon: '⚠️',
-          name: 'Arrest & Legal Threats',
-          severity: 'critical',
-          explanation: 'Threatens immediate arrest and legal action to induce fear and compliance.'
-        },
-        {
-          icon: '🎯',
-          name: 'Identity Theft Solicitation',
-          severity: 'critical',
-          explanation: 'Demands SSN, date of birth, and banking info within 24 hours.'
-        }
-      ],
-      tips: [
-        'The IRS never initiates contact by email, text, or social media to demand immediate payment.',
-        'The IRS never threatens immediate arrest or demands sensitive information over phone/text.',
-        'Report this scam immediately to the Treasury Inspector General (TIGTA).'
-      ]
-    };
-  }
-
-  if (lower.includes('coffee') || lower.includes('article') || lower.includes('discussing') || lower.includes('timing works')) {
-    return {
-      score: 5,
-      verdict: 'Clean / Safe Message',
-      mode: 'demo',
-      summary: 'Casual conversational message with no linguistic coercion, suspicious payment demands, urgency triggers, or credential harvesting indicators.',
-      flags: [],
-      tips: [
-        'Message shows standard human conversational cadence.',
-        'No malicious attachments or suspicious URLs detected.'
-      ]
-    };
-  }
-
-  // Generic message fallback
-  return {
-    score: 42,
-    verdict: 'Low-to-Medium Suspicion',
-    mode: 'demo',
-    summary: 'The message contains generic phrasing. While no critical phishing indicators were flagged, treat unsolicited requests with caution.',
-    flags: [
-      {
-        icon: '🔍',
-        name: 'Unverified Origin',
-        severity: 'medium',
-        explanation: 'Message sender and context cannot be verified against known trusted identity.'
-      }
-    ],
-    tips: [
-      'Confirm the identity of the sender before clicking links or replying.',
-      'Do not disclose private financial information.'
-    ]
-  };
+  const result = type === 'url' ? analyzeUrlDemo(content) : analyzeMessageDemo(content);
+  return { ...result, mode: 'demo', latency: 280 };
 }
 
 // ==========================================================================
