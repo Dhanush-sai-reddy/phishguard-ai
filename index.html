@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard AI — Instant Phishing & Scam Detection</title>
+  <meta name="description" content="AI-powered tool to detect phishing URLs and scam messages. Paste any suspicious link or message for instant threat analysis.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Ambient background glow mesh -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="brand">
+          <div class="shield-logo" aria-hidden="true">
+            <span class="shield-emoji">🛡️</span>
+            <div class="shield-ring"></div>
+          </div>
+          <div class="brand-text">
+            <h1 class="logo-title">PhishGuard <span class="gradient-text">AI</span></h1>
+            <p class="tagline">Don't click. Verify.</p>
+          </div>
+        </div>
+
+        <div class="mode-badge" id="modeBadge" title="Engine Status">
+          <span class="status-indicator"></span>
+          <span class="mode-label" id="modeText">Checking Engine...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+      <!-- Scanner Card -->
+      <section class="glass-card scanner-card" id="scannerCard">
+        <!-- Tab Bar -->
+        <div class="tabs-container" role="tablist" aria-label="Input Types">
+          <div class="tab-indicator" id="tabIndicator"></div>
+          <button type="button" class="tab-btn active" id="tabUrl" role="tab" aria-selected="true" aria-controls="urlInputSection">
+            <span class="tab-icon">🔗</span>
+            <span class="tab-label">Scan URL</span>
+          </button>
+          <button type="button" class="tab-btn" id="tabMessage" role="tab" aria-selected="false" aria-controls="messageInputSection">
+            <span class="tab-icon">📧</span>
+            <span class="tab-label">Scan Message</span>
+          </button>
+        </div>
+
+        <!-- Scan Form -->
+        <form id="scanForm" class="scan-form" onsubmit="return false;">
+          <!-- URL Input Section -->
+          <div class="input-panel active" id="urlInputSection" role="tabpanel" aria-labelledby="tabUrl">
+            <div class="input-wrapper">
+              <span class="input-prefix-icon" aria-hidden="true">🌐</span>
+              <input 
+                type="text" 
+                id="urlInput" 
+                class="glass-input" 
+                placeholder="Paste a suspicious URL... (e.g., https://paypa1-secure.com/verify)" 
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="button" class="clear-input-btn" id="clearUrlBtn" title="Clear input" aria-label="Clear URL input">✕</button>
+            </div>
+          </div>
+
+          <!-- Message Input Section -->
+          <div class="input-panel" id="messageInputSection" role="tabpanel" aria-labelledby="tabMessage">
+            <div class="input-wrapper textarea-wrapper">
+              <textarea 
+                id="messageInput" 
+                class="glass-input glass-textarea" 
+                rows="4" 
+                placeholder="Paste a suspicious email, SMS, or direct message..."
+                spellcheck="false"
+              ></textarea>
+              <button type="button" class="clear-input-btn textarea-clear" id="clearMessageBtn" title="Clear input" aria-label="Clear message input">✕</button>
+            </div>
+          </div>
+
+          <!-- Scan Action Button -->
+          <div class="action-row">
+            <button type="submit" id="scanBtn" class="primary-btn glow-btn">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="shield-svg">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <path d="M9 12l2 2 4-4"></path>
+                </svg>
+              </span>
+              <span class="btn-text" id="scanBtnText">Scan Now</span>
+              <span class="btn-loader" id="scanBtnLoader"></span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Example Chips / Quick Prompts -->
+        <div class="examples-container">
+          <span class="examples-label">Quick Prompts:</span>
+
+          <!-- URL Examples -->
+          <div class="examples-list active" id="urlExamples">
+            <button type="button" class="example-chip" data-type="url" data-target="paypa1">
+              <span class="chip-try">Try:</span> paypa1-secure.com/verify
+            </button>
+            <button type="button" class="example-chip" data-type="url" data-target="google">
+              <span class="chip-try">Try:</span> google.com
+            </button>
+            <button type="button" class="example-chip" data-type="url" data-target="ip">
+              <span class="chip-try">Try:</span> 192.168.1.1/login.php
+            </button>
+          </div>
+
+          <!-- Message Examples -->
+          <div class="examples-list" id="messageExamples">
+            <button type="button" class="example-chip" data-type="message" data-target="prince">
+              <span class="chip-try">Try:</span> Nigerian prince email
+            </button>
+            <button type="button" class="example-chip" data-type="message" data-target="irs">
+              <span class="chip-try">Try:</span> IRS scam
+            </button>
+            <button type="button" class="example-chip" data-type="message" data-target="normal">
+              <span class="chip-try">Try:</span> Normal message
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scanning In-Progress / Radar Card -->
+      <section class="glass-card loading-card" id="loadingState" style="display: none;">
+        <div class="radar-scanner">
+          <div class="radar-ring r1"></div>
+          <div class="radar-ring r2"></div>
+          <div class="radar-ring r3"></div>
+          <div class="radar-sweep"></div>
+          <div class="radar-center">
+            <span class="radar-shield">🛡️</span>
+          </div>
+        </div>
+        <div class="loading-info">
+          <h3 class="loading-title">Analyzing Threat Vectors</h3>
+          <p class="loading-status" id="loadingStatusText">Querying threat intelligence database...</p>
+          <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section (hidden until scan completes) -->
+      <section class="results-container" id="resultsSection" style="display: none;">
+        <!-- Results Header -->
+        <div class="results-header-bar glass-card">
+          <div class="target-summary">
+            <span class="target-type-badge" id="resultTypeBadge">🔗 URL</span>
+            <span class="target-content-preview" id="resultTargetPreview">https://...</span>
+          </div>
+          <div class="results-header-actions">
+            <span class="result-time-pill" id="resultTimePill">Just now</span>
+            <button type="button" class="icon-text-btn" id="rescanBtn" title="Re-scan this target">
+              <span>🔄</span> Scan Again
+            </button>
+          </div>
+        </div>
+
+        <!-- Score Gauge & Summary Row -->
+        <div class="results-main-grid">
+          <!-- Gauge Card -->
+          <div class="glass-card gauge-card">
+            <div class="gauge-header">
+              <h2 class="card-section-title">Threat Score</h2>
+              <span class="risk-meter-tag">Risk Assessment</span>
+            </div>
+
+            <div class="gauge-wrapper">
+              <svg class="score-svg" viewBox="0 0 200 200" width="200" height="200" aria-label="Threat Score Gauge">
+                <defs>
+                  <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="6" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                  <linearGradient id="scoreGradientSafe" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00d68f" />
+                    <stop offset="100%" stop-color="#00f5a0" />
+                  </linearGradient>
+                  <linearGradient id="scoreGradientLow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#7bc67e" />
+                    <stop offset="100%" stop-color="#a8e063" />
+                  </linearGradient>
+                  <linearGradient id="scoreGradientMedium" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffb800" />
+                    <stop offset="100%" stop-color="#ff9100" />
+                  </linearGradient>
+                  <linearGradient id="scoreGradientHigh" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ff6b35" />
+                    <stop offset="100%" stop-color="#ff3d00" />
+                  </linearGradient>
+                  <linearGradient id="scoreGradientCritical" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ff3d71" />
+                    <stop offset="100%" stop-color="#ff0055" />
+                  </linearGradient>
+                </defs>
+
+                <!-- Background Track Ring -->
+                <circle
+                  class="gauge-track"
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="none"
+                  stroke="rgba(255, 255, 255, 0.07)"
+                  stroke-width="14"
+                />
+
+                <!-- Animated Progress Ring -->
+                <circle
+                  id="gaugeProgressCircle"
+                  class="gauge-progress"
+                  cx="100"
+                  cy="100"
+                  r="80"
+                  fill="none"
+                  stroke="#00d68f"
+                  stroke-width="14"
+                  stroke-linecap="round"
+                  stroke-dasharray="502.65"
+                  stroke-dashoffset="502.65"
+                  transform="rotate(-90 100 100)"
+                />
+              </svg>
+
+              <!-- Central Score Content -->
+              <div class="gauge-center-content">
+                <span class="gauge-score-value" id="gaugeScoreValue">0</span>
+                <span class="gauge-score-label">/ 100</span>
+              </div>
+            </div>
+
+            <!-- Verdict Pill below Gauge -->
+            <div class="verdict-container">
+              <span class="verdict-badge" id="gaugeVerdict">Evaluating...</span>
+            </div>
+          </div>
+
+          <!-- AI Summary Card -->
+          <div class="glass-card summary-card">
+            <div class="summary-header">
+              <h2 class="card-section-title">Executive Summary</h2>
+              <span class="analysis-source-badge" id="summarySourceBadge">
+                <span class="sparkle-icon">✨</span>
+                <span id="summarySourceText">AI Analysis</span>
+              </span>
+            </div>
+            <div class="summary-content">
+              <p class="summary-paragraph" id="summaryParagraph">
+                Awaiting threat analysis evaluation...
+              </p>
+            </div>
+            <div class="summary-meta-grid" id="summaryMetaGrid">
+              <div class="meta-item">
+                <span class="meta-label">Detection Confidence</span>
+                <span class="meta-value" id="metaConfidence">High (98.4%)</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Heuristic Flags</span>
+                <span class="meta-value" id="metaFlagsCount">0 Detected</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Engine Latency</span>
+                <span class="meta-value" id="metaLatency">~280ms</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Red Flags / Threat Indicators Section -->
+        <section class="threat-flags-section">
+          <div class="section-title-row">
+            <h2 class="section-main-title">
+              Threat Indicators
+              <span class="count-badge" id="flagsCountBadge">0</span>
+            </h2>
+            <span class="section-subtitle">Deep heuristic breakdown of identified risk signals</span>
+          </div>
+
+          <div class="flags-grid" id="flagsGrid">
+            <!-- Dynamically populated or no-threats card -->
+          </div>
+        </section>
+
+        <!-- Safety Tips Section -->
+        <section class="safety-tips-section">
+          <div class="glass-card safety-card">
+            <div class="tips-header">
+              <div class="tips-title-group">
+                <span class="tips-icon">💡</span>
+                <h2 class="card-section-title">Stay Safe — Recommended Actions</h2>
+              </div>
+              <span class="security-protocol-tag">Protective Guidance</span>
+            </div>
+            <ul class="tips-list" id="tipsList">
+              <!-- Dynamically populated -->
+            </ul>
+          </div>
+        </section>
+      </section>
+
+      <!-- Scan History Section -->
+      <section class="history-section">
+        <div class="glass-card history-card">
+          <div class="history-header">
+            <div class="history-title-group">
+              <span class="history-icon">📋</span>
+              <h2 class="card-section-title">Recent Scans</h2>
+              <span class="history-count-badge" id="historyCountBadge">0</span>
+            </div>
+            <button type="button" class="clear-history-btn" id="clearHistoryBtn" title="Clear all local scan history">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Clear History</span>
+            </button>
+          </div>
+
+          <!-- History List Container -->
+          <div class="history-list-wrapper">
+            <div class="history-list" id="historyList">
+              <!-- Dynamically populated -->
+            </div>
+            <div class="history-empty" id="historyEmptyState">
+              <span class="empty-icon">🛡️</span>
+              <p class="empty-text">No scans in history yet.</p>
+              <p class="empty-subtext">Scan a link or message above to track threat reports locally.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <div class="footer-badges">
+          <span class="hackathon-tag">Built for NextSpark & SafeSpace Hackathons 2026</span>
+          <span class="privacy-tag">🔒 Zero-Retention Privacy</span>
+        </div>
+        <p class="footer-disclaimer">
+          PhishGuard AI does not store your data. All analysis is done in real-time.
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Main JavaScript Bundle -->
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
