@@ -81,3 +81,36 @@ A recorded walkthrough is in `docs/demo.mp4` and linked above. Longer script, if
 - Live demo: https://dhanush-sai-reddy.github.io/phishguard-ai/
 - Video (57s captioned walkthrough): https://dhanush-sai-reddy.github.io/phishguard-ai/demo.mp4
 - Screenshot: https://dhanush-sai-reddy.github.io/phishguard-ai/screenshot.png
+
+---
+
+## Disclosure (required by all three events)
+
+PhishGuard AI was designed and built by Dhanush Sai Reddy between **21 and 23 October 2026**, inside the submission windows of NextSpark Hacks (Oct 21–26), SafeSpace Hacks (Oct 17–Nov 22), and LaunchPad Hacks (Oct 16–Nov 20). No code, design, or assets predate those windows. Third-party components: Vite, Express, OpenAI SDK (optional, unused without a key), Inter typeface, emoji icons. No user data is collected.
+
+---
+
+## Variant: LaunchPad Hacks 2026
+
+LaunchPad scores Innovation & Originality, Usefulness & Impact, Implementation & Functionality, and (per the public page) presentation/demo quality, each 1–5.
+
+**One-line pitch:** A phishing link checker that teaches the person why the link is fake, so they need it less next time.
+
+**Why it fits "something worth launching":**
+- Clear wedge: consumer security literacy, not another enterprise scanner.
+- Zero-cost, zero-signup, works offline — the adoption barrier is one paste.
+- Same engine powers an API, so a browser extension or school portal is a thin wrapper, not a rewrite.
+
+**Demo path for judges (60 seconds):** open the live link → scan the `paypa1` example → read the two flag explanations → scan `google.com` → show the method & limits panel → show the local-only history.
+
+**Honest limitations:** heuristic, text-only, no live reputation lookups (see the in-app panel). This is stated in the UI, not buried.
+
+## Submission checklist
+
+- [ ] Repo public, README has live link + run steps
+- [ ] Live demo loads with `Demo Mode` badge and no console errors
+- [ ] Video URL resolves (MP4 plays in the browser)
+- [ ] Built-with tags added on Devpost
+- [ ] Gallery image uploaded (`docs/screenshot.png`)
+- [ ] Disclosure paragraph pasted where the form asks about prior work
+- [ ] Submitted before deadline, confirmation screenshot saved
