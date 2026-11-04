@@ -25,12 +25,14 @@ function getVerdictAndRisk(score) {
 function analyzeUrlDemo(urlInput) {
   let hostname = '';
   let pathname = '';
+  let hasUserInfo = false;
   const rawInput = urlInput.trim();
 
   try {
     const parsed = new URL(rawInput.includes('://') ? rawInput : `http://${rawInput}`);
     hostname = parsed.hostname.toLowerCase();
     pathname = parsed.pathname.toLowerCase();
+    hasUserInfo = Boolean(parsed.username || parsed.password);
   } catch {
     hostname = rawInput.toLowerCase().split('/')[0];
     pathname = rawInput.toLowerCase().slice(hostname.length);
@@ -39,7 +41,19 @@ function analyzeUrlDemo(urlInput) {
   const flags = [];
   let threatScore = 0;
 
-  // 1. Typosquatting of popular domains
+  // URL user-info can make a trusted-looking string appear before the real host.
+  // In https://paypal.com@attacker.example/, the destination is attacker.example.
+  if (hasUserInfo) {
+    threatScore = Math.max(threatScore, 90);
+    flags.push({
+      name: 'Misleading URL Before @',
+      severity: 'high',
+      explanation: `This URL contains text before '@'. Browsers treat that part as sign-in information; the actual destination is '${hostname}'.`,
+      icon: '⚠️',
+    });
+  }
+
+  // 2. Typosquatting of popular domains
   const typosquattingPatterns = [
     { typo: 'paypa1', legit: 'paypal.com' },
     { typo: 'g00gle', legit: 'google.com' },
@@ -147,9 +161,9 @@ function analyzeUrlDemo(urlInput) {
   if (isTrusted) {
     threatScore = 8;
     flags.push({
-      name: 'Verified Trusted Domain',
+      name: 'Common Domain Match',
       severity: 'low',
-      explanation: `The domain '${hostname}' belongs to a verified, highly-trusted organization with standard TLS practices.`,
+      explanation: `The domain '${hostname}' matches a common-domain list. This local check does not verify ownership, TLS, or current reputation.`,
       icon: '🟢',
     });
   } else if (flags.length === 0) {
@@ -169,7 +183,7 @@ function analyzeUrlDemo(urlInput) {
   let tips = [];
 
   if (riskLevel === 'critical' || riskLevel === 'high') {
-    summary = `High-risk indicators detected for this URL, including ${flags.map((f) => f.name.toLowerCase()).join(' and ')}. Navigating to this destination poses an immediate threat of credential theft or malware download.`;
+    summary = `High-risk warning signs detected for this URL, including ${flags.map((f) => f.name.toLowerCase()).join(' and ')}. Avoid signing in or sharing sensitive information through this link; this local scan does not verify the destination's current behavior.`;
     tips = [
       'Do not enter passwords, email addresses, or payment details on this website.',
       'Check the address bar closely to ensure the domain matches the official brand name exactly.',
@@ -182,7 +196,7 @@ function analyzeUrlDemo(urlInput) {
       'Inspect the SSL certificate to ensure it is registered to the expected entity.',
     ];
   } else {
-    summary = `This URL appears safe with no obvious phishing triggers. It matches standard trusted domain structures or exhibits low threat indicators.`;
+    summary = `No high-risk URL patterns matched. This local check does not visit the site or verify its current reputation, so confirm the address before sharing sensitive information.`;
     tips = [
       'Always ensure HTTPS is active before transmitting any personal information.',
       'Bookmark frequently used websites to avoid navigation through search or third-party links.',
@@ -216,6 +230,9 @@ function analyzeMessageDemo(messageInput) {
     'limited time',
     '24 hours',
     'account will be',
+    'तुरंत',
+    'जरूरी है',
+    'बंद कर',
   ];
   const matchedUrgency = urgencyWords.filter((w) => lower.includes(w));
   if (matchedUrgency.length > 0) {
@@ -343,6 +360,26 @@ function analyzeMessageDemo(messageInput) {
         icon: '🔗',
       });
     }
+  }
+
+  // 7. Indic-language scam phrases (voice-call transcripts from Gnani Prisma STT)
+  const indicScamWords = [
+    'स्कैम', 'ओटीपी', 'ओ टी पी', 'पिन शेयर', 'पिन न', 'यूपीआई', 'यू पी आई', 'ब्लॉक कर', 'खाता ब्लॉक', 'केवाईसी अपडेट', 'एटीएम', 'ATM',
+    'OTP भेज', 'PIN माँग', 'शेयर न करें', 'बंद कर दूँगे',
+    'பின்கோட்', 'ஒடிபி', 'மோசடி', 'உள்நுழை',
+    'ఓటీపీ', 'పిన్', 'మోసం',
+    'ওটিপি', 'পিন', 'প্রতারণা',
+    'गोट्याचा', 'ओटीपी मागते',
+  ];
+  const matchedIndic = indicScamWords.filter((w) => lower.includes(w));
+  if (matchedIndic.length > 0) {
+    scoreDelta += 30 + (matchedIndic.length >= 2 ? 8 : 0);
+    flags.push({
+      name: 'Indic Scam Call Language',
+      severity: 'high',
+      explanation: `The transcript contains known scam-call phrasing in an Indian language (${matchedIndic.map((w) => `"${w}"`).join(', ')}), such as requests for OTP/PIN or blocking threats.`,
+      icon: '📞',
+    });
   }
 
   let finalScore = 0;

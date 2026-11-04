@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+dotenv.config({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 dotenv.config();
 
 import express from 'express';
@@ -10,6 +12,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim();
 const isAiMode = Boolean(OPENAI_API_KEY);
+const GNANI_API_KEY = process.env.gnani?.trim();
+
+const GNANI_BASE = 'https://api.vachana.ai';
 
 const openai = isAiMode
   ? new OpenAI({ apiKey: OPENAI_API_KEY })
@@ -148,7 +153,95 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     mode: isAiMode ? 'ai' : 'demo',
+    voice: Boolean(GNANI_API_KEY),
   });
+});
+
+// Gnani Prisma v3.0 speech-to-text: raw audio in, transcript + detected language out
+app.post(
+  '/api/voice/transcribe',
+  express.raw({ type: '*/*', limit: '15mb' }),
+  async (req, res) => {
+    if (!GNANI_API_KEY) {
+      return res.status(503).json({ error: 'Voice mode disabled: no Gnani API key configured.' });
+    }
+    const audio = req.body;
+    if (!Buffer.isBuffer(audio) || audio.length === 0) {
+      return res.status(400).json({ error: 'Empty audio body.' });
+    }
+
+    try {
+      const form = new FormData();
+      form.append('audio_file', new Blob([audio], { type: 'audio/wav' }), 'audio.wav');
+      form.append('model', 'prisma-v3.0');
+      form.append('language_code', 'indic-auto');
+
+      const gnaniRes = await fetch(`${GNANI_BASE}/stt/v3`, {
+        method: 'POST',
+        headers: { 'X-API-Key-ID': GNANI_API_KEY },
+        body: form,
+      });
+      const data = await gnaniRes.json();
+      if (!gnaniRes.ok || data.success === false) {
+        console.error('Gnani STT error:', gnaniRes.status, data);
+        return res.status(502).json({ error: 'Speech transcription failed.', detail: data });
+      }
+      return res.json({
+        transcript: data.transcript || '',
+        language: data.detected_language_code || 'en-IN',
+        latency: data.end_to_end_latency,
+      });
+    } catch (error) {
+      console.error('Voice transcribe error:', error);
+      return res.status(500).json({ error: 'Voice transcription error.' });
+    }
+  }
+);
+
+// Gnani Timbre text-to-speech: JSON {text, language} out, spoken WAV
+app.post('/api/voice/alert', async (req, res) => {
+  if (!GNANI_API_KEY) {
+    return res.status(503).json({ error: 'Voice mode disabled: no Gnani API key configured.' });
+  }
+  const { text, language } = req.body || {};
+  if (!text || typeof text !== 'string') {
+    return res.status(400).json({ error: 'Invalid request: "text" must be a non-empty string.' });
+  }
+
+  try {
+    const gnaniRes = await fetch(`${GNANI_BASE}/api/v1/tts/inference`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key-ID': GNANI_API_KEY,
+      },
+      body: JSON.stringify({
+        text,
+        voice: 'Nalini',
+        model: 'timbre-v2.5',
+        language: language || 'en-IN',
+        speed: 1.0,
+        audio_config: {
+          sample_rate: 24000,
+          num_channels: 1,
+          sample_width: 2,
+          encoding: 'linear_pcm',
+          container: 'wav',
+        },
+      }),
+    });
+    if (!gnaniRes.ok) {
+      const detail = await gnaniRes.text();
+      console.error('Gnani TTS error:', gnaniRes.status, detail);
+      return res.status(502).json({ error: 'Text-to-speech failed.' });
+    }
+    const audio = Buffer.from(await gnaniRes.arrayBuffer());
+    res.setHeader('Content-Type', 'audio/wav');
+    return res.send(audio);
+  } catch (error) {
+    console.error('Voice alert error:', error);
+    return res.status(500).json({ error: 'Voice alert error.' });
+  }
 });
 
 // Analyze endpoint

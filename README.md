@@ -14,7 +14,7 @@ Built for **NextSpark Hacks 2026** and **SafeSpace Hacks 2026**.
 
 ## What it does
 
-- **URL scan** — typosquatting, raw-IP hosts, high-abuse TLDs, excessive subdomains, credential-harvesting paths
+- **URL scan** — misleading text before `@`, typosquatting, raw-IP hosts, high-abuse TLDs, excessive subdomains, credential-harvesting paths
 - **Message scan** — manufactured urgency, fake prizes, credential requests, authority impersonation, spam formatting
 - **Threat score 0–100** with a consistent verdict band (Safe → Critical)
 - **Explainable flags** — each signal states what was found and why it matters
@@ -68,7 +68,7 @@ Each signal contributes a fixed weight; the score is the maximum matched signal,
 | 61–80 | Dangerous |
 | 81–100 | Critical Threat |
 
-**Honest limits:** this is a transparent rules engine with an optional LLM layer, not a trained classifier. It does not fetch the URL, resolve DNS, or query threat feeds, so it cannot detect a compromised legitimate domain. "Detection confidence" is evidence coverage (how many weighted signals matched), not a statistical probability.
+**Honest limits:** this is a transparent rules engine with an optional LLM layer, not a trained classifier. It does not fetch the URL, resolve DNS, or query threat feeds, so it cannot detect a compromised legitimate domain. A warning for text before `@` identifies how the browser parses the destination; it does not establish the destination's reputation. "Detection confidence" is evidence coverage (how many weighted signals matched), not a statistical probability.
 
 ## Stack
 

@@ -57,6 +57,14 @@
             <span class="tab-icon">📧</span>
             <span class="tab-label">Scan Message</span>
           </button>
+          <button type="button" class="tab-btn" id="tabScreenshot" role="tab" aria-selected="false" aria-controls="screenshotInputSection">
+            <span class="tab-icon">📷</span>
+            <span class="tab-label">Scan Screenshot</span>
+          </button>
+          <button type="button" class="tab-btn" id="tabVoice" role="tab" aria-selected="false" aria-controls="voiceInputSection">
+            <span class="tab-icon">🎙️</span>
+            <span class="tab-label">Scan Voice Call</span>
+          </button>
         </div>
 
         <!-- Scan Form -->
@@ -91,6 +99,128 @@
             </div>
           </div>
 
+          <!-- Screenshot Input Section -->
+          <div class="input-panel" id="screenshotInputSection" role="tabpanel" aria-labelledby="tabScreenshot">
+            <div class="screenshot-dropzone" id="screenshotDropzone" role="button" tabindex="0" aria-label="Drop or click to upload screenshot">
+              <div class="dropzone-icon" aria-hidden="true">📷</div>
+              <h3 class="dropzone-title">Drop screenshot or click to upload</h3>
+              <p class="dropzone-subtitle">Supported: PNG, JPG, WebP, GIF, BMP</p>
+              <input type="file" id="screenshotFileInput" class="hidden-file-input" accept="image/*" aria-hidden="true" />
+            </div>
+            
+            <!-- Image Preview -->
+            <div class="image-preview hidden" id="imagePreview">
+              <img id="previewImage" src="" alt="Screenshot preview" />
+              <button type="button" class="remove-image-btn" id="removeImageBtn" aria-label="Remove screenshot">✕</button>
+            </div>
+
+            <!-- OCR Progress -->
+            <div class="ocr-progress hidden" id="ocrProgress">
+              <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+              </div>
+              <div class="progress-status" id="progressStatus">Initializing OCR...</div>
+              <div class="progress-detail" id="progressDetail"></div>
+            </div>
+
+            <!-- Extracted Content Review -->
+            <div class="extracted-content hidden" id="extractedContent">
+              <div class="extracted-section">
+                <div class="extracted-header">
+                  <h4 class="extracted-title">Extracted Text <span class="ocr-badge" id="ocrMethodBadge">OCR</span></h4>
+                  <button type="button" class="copy-btn" id="copyTextBtn" title="Copy extracted text">📋</button>
+                </div>
+                <textarea 
+                  id="extractedText" 
+                  class="glass-input glass-textarea extracted-textarea" 
+                  rows="5" 
+                  placeholder="OCR text will appear here..."
+                  spellcheck="false"
+                ></textarea>
+              </div>
+
+              <div class="extracted-section links-section" id="linksSection" style="display: none;">
+                <div class="extracted-header">
+                  <h4 class="extracted-title">Detected Links <span class="link-count-badge" id="linkCountBadge">0</span></h4>
+                </div>
+                <div class="links-list" id="linksList"></div>
+              </div>
+
+              <div class="extracted-section qr-section" id="qrSection" style="display: none;">
+                <div class="extracted-header">
+                  <h4 class="extracted-title">QR Code Content <span class="qr-badge" id="qrStatusBadge">Found</span></h4>
+                </div>
+                <textarea 
+                  id="qrContent" 
+                  class="glass-input glass-textarea" 
+                  rows="3" 
+                  placeholder="QR code data will appear here..."
+                  spellcheck="false"
+                  readonly
+                ></textarea>
+              </div>
+
+              <div class="scan-extracted-row">
+                <button type="button" class="primary-btn scan-extracted-btn" id="scanExtractedBtn">
+                  <span class="btn-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="shield-svg">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <path d="M9 12l2 2 4-4"></path>
+                    </svg>
+                  </span>
+                  <span class="btn-text">Scan Extracted Content</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Error States -->
+            <div class="screenshot-error hidden" id="screenshotError">
+              <span class="error-icon" aria-hidden="true">⚠️</span>
+              <p class="error-message" id="errorMessage">Error processing image</p>
+              <button type="button" class="retry-btn" id="retryBtn">Try Another Image</button>
+            </div>
+
+            <!-- Screenshot Examples -->
+            <div class="examples-list" id="screenshotExamples">
+              <button type="button" class="example-chip" data-type="screenshot" data-target="phishing">
+                <span class="chip-try">Try:</span> Phishing email screenshot
+              </button>
+              <button type="button" class="example-chip" data-type="screenshot" data-target="qr">
+                <span class="chip-try">Try:</span> QR code with link
+              </button>
+              <button type="button" class="example-chip" data-type="screenshot" data-target="legit">
+                <span class="chip-try">Try:</span> Legitimate message
+              </button>
+            </div>
+          </div>
+
+          <!-- Voice Call Input Section -->
+          <div class="input-panel" id="voiceInputSection" role="tabpanel" aria-labelledby="tabVoice">
+            <div class="voice-controls">
+              <button type="button" class="record-btn" id="recordBtn" aria-label="Record call audio">
+                <span class="record-dot" aria-hidden="true"></span>
+                <span class="record-label" id="recordLabel">Record scam call</span>
+              </button>
+              <span class="record-timer" id="recordTimer">0:00 / 0:30</span>
+              <label class="voice-upload-label" for="voiceFileInput">
+                Upload audio
+                <input type="file" id="voiceFileInput" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a" />
+              </label>
+            </div>
+            <p class="voice-hint">Works in Hindi, Tamil, Telugu, Bengali, Marathi and more (Prisma v3.0 auto-detect). Max 30 seconds. Requires the backend with a Gnani API key.</p>
+            <div class="voice-status hidden" id="voiceStatus" role="status"></div>
+            <div class="voice-transcript hidden" id="voiceTranscriptBox">
+              <div class="extracted-header">
+                <h4 class="extracted-title">Call Transcript <span class="ocr-badge" id="voiceLangBadge">--</span></h4>
+                <button type="button" class="copy-btn" id="voicePlayAlertBtn" title="Play spoken scam warning" hidden>🔊</button>
+              </div>
+              <textarea id="voiceTranscript" class="glass-input glass-textarea" rows="4" placeholder="Transcript will appear here..." readonly spellcheck="false"></textarea>
+            </div>
+            <div class="examples-list" id="voiceExamples">
+              <span class="voice-tip">After the transcript appears, press <strong>Scan Now</strong> — PhishGuard will speak a warning in that language if the call looks like a scam.</span>
+            </div>
+          </div>
+
           <!-- Scan Action Button -->
           <div class="action-row">
             <button type="submit" id="scanBtn" class="primary-btn glow-btn">
@@ -120,6 +250,9 @@
             </button>
             <button type="button" class="example-chip" data-type="url" data-target="ip">
               <span class="chip-try">Try:</span> 192.168.1.1/login.php
+            </button>
+            <button type="button" class="example-chip" data-type="url" data-target="at">
+              <span class="chip-try">Try:</span> paypal.com@attacker.example
             </button>
           </div>
 
@@ -151,7 +284,7 @@
         </div>
         <div class="loading-info">
           <h3 class="loading-title">Analyzing Threat Vectors</h3>
-          <p class="loading-status" id="loadingStatusText">Querying threat intelligence database...</p>
+          <p class="loading-status" id="loadingStatusText">Checking URL structure and message signals...</p>
           <div class="loading-bar">
             <div class="loading-bar-fill"></div>
           </div>
